@@ -1,3 +1,2 @@
-FROM ubuntu
-COPY ./index.html .
-
+FROM nginx
+COPY index.html /usr/share/nginx/html
