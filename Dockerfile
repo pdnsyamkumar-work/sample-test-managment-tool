@@ -1,3 +1,3 @@
-FROM nginix
+FROM nginx
 COPY ./index.html .
 
