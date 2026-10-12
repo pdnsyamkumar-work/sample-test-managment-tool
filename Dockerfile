@@ -1,3 +1,3 @@
-FROM ubuntu
+FROM nginix
 COPY ./index.html .
 
