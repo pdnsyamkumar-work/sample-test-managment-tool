@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestMatrix - Interactive Test Management Tool</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar and smooth transitions */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="h-full bg-slate-50 text-slate-800 font-sans antialiased overflow-hidden">
+
+    <div id="app" class="flex h-full w-full">
+
+        <!-- SIDEBAR -->
+        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 shrink-0 z-20">
+            <div class="h-16 flex items-center px-6 gap-3 border-b border-slate-800 bg-slate-950/50">
+                <div
+                    class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-vial-circle-check text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-lg tracking-wide">TestMatrix</h1>
+                    <p class="text-xs text-slate-400">QA Management Suite</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+                </button>
+                <button onclick="switchTab('testcases')" id="nav-testcases"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                    <i class="fa-solid fa-list-check w-5 text-center"></i> Test Cases
+                </button>
+                <button onclick="switchTab('testruns')" id="nav-testruns"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                    <i class="fa-solid fa-play-circle w-5 text-center"></i> Test Runs & Cycles
+                </button>
+                <button onclick="switchTab('defects')" id="nav-defects"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                    <i class="fa-solid fa-bug w-5 text-center"></i> Defect Tracker
+                </button>
+                <button onclick="switchTab('reports')" id="nav-reports"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white">
+                    <i class="fa-solid fa-file-lines w-5 text-center"></i> Reports & Export
+                </button>
+            </nav>
+
+            <!-- Sidebar Footer / Demo Controls -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/30">
+                <button onclick="loadDemoData()"
+                    class="w-full mb-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-database text-indigo-400"></i> Load Demo Data
+                </button>
+                <button onclick="clearAllData()"
+                    class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2 border border-rose-500/20">
+                    <i class="fa-solid fa-trash-can"></i> Reset All Data
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
+            <!-- Top Navbar -->
+            <header
+                class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 shadow-sm z-10">
+                <div class="flex items-center gap-4">
+                    <h2 id="page-title" class="text-xl font-bold text-slate-800">Dashboard</h2>
+                    <span id="current-project-badge"
+                        class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">Project:
+                        E-Commerce Web App v2.4</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="relative hidden sm:block">
+                        <span
+                            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-search text-xs"></i>
+                        </span>
+                        <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)"
+                            placeholder="Quick search test cases..."
+                            class="pl-9 pr-4 py-1.5 bg-slate-100 hover:bg-slate-200/60 focus:bg-white text-sm rounded-lg border border-transparent focus:border-indigo-500 focus:outline-none w-64 transition-all">
+                    </div>
+                    <div class="h-8 w-px bg-slate-200 mx-1"></div>
+                    <div class="flex items-center gap-2.5">
+                        <div
+                            class="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-md shadow-indigo-500/20">
+                            QA</div>
+                        <span class="text-sm font-semibold text-slate-700 hidden md:inline">Lead QA Tester</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Viewport -->
+            <div class="flex-1 overflow-y-auto p-6 md:p-8">
+
+                <!-- ================= 1. DASHBOARD TAB ================= -->
+                <div id="tab-dashboard" class="tab-content active space-y-6">
+                    <!-- Metrics Row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div
+                            class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Tests</p>
+                                <h3 id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Passed</p>
+                                <h3 id="stat-passed" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Failed</p>
+                                <h3 id="stat-failed" class="text-2xl font-bold text-rose-600 mt-1">0</h3>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-circle-xmark"></i>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Blocked</p>
+                                <h3 id="stat-blocked" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
+                            <div>
+                                <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Pass Rate</p>
+                                <h3 id="stat-passrate" class="text-2xl font-bold text-indigo-600 mt-1">0%</h3>
+                            </div>
+                            <div
+                                class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts / Progress Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Execution Progress Bar breakdown -->
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm lg:col-span-2 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-bold text-slate-800 text-base">Overall Test Execution Progress</h3>
+                                    <span id="exec-ratio-text" class="text-sm font-semibold text-slate-500">0%
+                                        Executed</span>
+                                </div>
+                                <!-- Stacked Bar -->
+                                <div
+                                    class="w-full h-5 bg-slate-100 rounded-full overflow-hidden flex shadow-inner mb-6">
+                                    <div id="bar-passed" class="bg-emerald-500 transition-all duration-500"
+                                        style="width: 0%"></div>
+                                    <div id="bar-failed" class="bg-rose-500 transition-all duration-500"
+                                        style="width: 0%"></div>
+                                    <div id="bar-blocked" class="bg-amber-500 transition-all duration-500"
+                                        style="width: 0%"></div>
+                                    <div id="bar-untested" class="bg-slate-300 transition-all duration-500"
+                                        style="width: 100%"></div>
+                                </div>
+                                <!-- Legend -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t border-slate-100">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3.5 h-3.5 rounded-full bg-emerald-500"></div>
+                                        <span class="text-sm font-medium text-slate-600">Passed (<span
+                                                id="count-passed">0</span>)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3.5 h-3.5 rounded-full bg-rose-500"></div>
+                                        <span class="text-sm font-medium text-slate-600">Failed (<span
+                                                id="count-failed">0</span>)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3.5 h-3.5 rounded-full bg-amber-500"></div>
+                                        <span class="text-sm font-medium text-slate-600">Blocked (<span
+                                                id="count-blocked">0</span>)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3.5 h-3.5 rounded-full bg-slate-300"></div>
+                                        <span class="text-sm font-medium text-slate-600">Not Executed (<span
+                                                id="count-untested">0</span>)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                <span>Tip: Use Demo Data button if your workspace is empty.</span>
+                                <button onclick="switchTab('testruns')"
+                                    class="text-indigo-600 font-semibold hover:underline flex items-center gap-1">Go to
+                                    Test Runs <i class="fa-solid fa-arrow-right text-xs"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Module Breakdown -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col">
+                            <h3 class="font-bold text-slate-800 text-base mb-4">Modules Summary</h3>
+                            <div id="dashboard-modules-list" class="space-y-3.5 flex-1 overflow-y-auto pr-1">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Test Runs & Defects widgets -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Recent Active Test Runs -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800 text-base">Active Test Runs</h3>
+                                <button onclick="switchTab('testruns')"
+                                    class="text-xs font-semibold text-indigo-600 hover:underline">View All</button>
+                            </div>
+                            <div id="dashboard-runs-list" class="space-y-3">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Open Defects Widget -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800 text-base">Recent Open Defects</h3>
+                                <button onclick="switchTab('defects')"
+                                    class="text-xs font-semibold text-indigo-600 hover:underline">View All</button>
+                            </div>
+                            <div id="dashboard-defects-list" class="space-y-3">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= 2. TEST CASES TAB ================= -->
+                <div id="tab-testcases" class="tab-content space-y-6">
+                    <!-- Action Bar -->
+                    <div
+                        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                            <!-- Search -->
+                            <div class="relative">
+                                <span
+                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-search text-xs"></i>
+                                </span>
+                                <input type="text" id="tc-search" oninput="renderTestCasesTable()"
+                                    placeholder="Search ID or title..."
+                                    class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 w-full sm:w-56">
+                            </div>
+                            <!-- Module Filter -->
+                            <select id="tc-filter-module" onchange="renderTestCasesTable()"
+                                class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                                <option value="">All Modules</option>
+                            </select>
+                            <!-- Priority Filter -->
+                            <select id="tc-filter-priority" onchange="renderTestCasesTable()"
+                                class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                                <option value="">All Priorities</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <!-- Status Filter -->
+                            <select id="tc-filter-status" onchange="renderTestCasesTable()"
+                                class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                                <option value="">All Statuses</option>
+                                <option value="Not Executed">Not Executed</option>
+                                <option value="Passed">Passed</option>
+                                <option value="Failed">Failed</option>
+                                <option value="Blocked">Blocked</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                            <button onclick="openTestCaseModal()"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-plus text-xs"></i> New Test Case
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Test Cases Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        <th class="py-3.5 px-4 w-10">
+                                            <input type="checkbox" id="select-all-tc" onclick="toggleSelectAllTC(this)"
+                                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                        </th>
+                                        <th class="py-3.5 px-4">ID</th>
+                                        <th class="py-3.5 px-4">Title & Module</th>
+                                        <th class="py-3.5 px-4">Type</th>
+                                        <th class="py-3.5 px-4">Priority</th>
+                                        <th class="py-3.5 px-4">Status</th>
+                                        <th class="py-3.5 px-4">Assigned</th>
+                                        <th class="py-3.5 px-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="testcases-table-body" class="divide-y divide-slate-100 text-sm">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Empty State -->
+                        <div id="tc-empty-state" class="hidden p-12 text-center">
+                            <div
+                                class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </div>
+                            <h4 class="text-base font-bold text-slate-700">No test cases found</h4>
+                            <p class="text-sm text-slate-500 mt-1">Get started by creating a new test case or loading
+                                demo data.</p>
+                            <button onclick="openTestCaseModal()"
+                                class="mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors">Create
+                                Test Case</button>
+                        </div>
+                        <!-- Table Footer / Bulk Actions -->
+                        <div
+                            class="p-4 bg-slate-50/70 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+                            <div id="tc-selection-count" class="font-medium">0 test cases selected</div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="bulkDeleteTC()"
+                                    class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 rounded-lg font-semibold transition-colors">Delete
+                                    Selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= 3. TEST RUNS TAB ================= -->
+                <div id="tab-testruns" class="tab-content space-y-6">
+                    <div
+                        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Test Runs & Execution Cycles</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Execute test cases step-by-step and track real-time
+                                results.</p>
+                        </div>
+                        <button onclick="openTestRunModal()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-plus text-xs"></i> Create Test Run
+                        </button>
+                    </div>
+
+                    <!-- Test Runs Cards Grid -->
+                    <div id="testruns-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <!-- Empty state -->
+                    <div id="runs-empty-state"
+                        class="hidden bg-white p-12 rounded-2xl border border-slate-200/80 text-center shadow-sm">
+                        <div
+                            class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
+                        <h4 class="text-base font-bold text-slate-700">No Test Runs Created</h4>
+                        <p class="text-sm text-slate-500 mt-1">Group test cases into a test run or cycle to start
+                            executing.</p>
+                        <button onclick="openTestRunModal()"
+                            class="mt-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors">Create
+                            Test Run</button>
+                    </div>
+                </div>
+
+                <!-- ================= 4. DEFECTS TAB ================= -->
+                <div id="tab-defects" class="tab-content space-y-6">
+                    <div
+                        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Defect / Bug Tracking</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Bugs linked automatically from failed test cases or
+                                logged manually.</p>
+                        </div>
+                        <button onclick="openDefectModal()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-bug text-xs"></i> Report New Defect
+                        </button>
+                    </div>
+
+                    <!-- Defects Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        <th class="py-3.5 px-4">Bug ID</th>
+                                        <th class="py-3.5 px-4">Title & Description</th>
+                                        <th class="py-3.5 px-4">Severity</th>
+                                        <th class="py-3.5 px-4">Status</th>
+                                        <th class="py-3.5 px-4">Linked Test Case</th>
+                                        <th class="py-3.5 px-4">Reported Date</th>
+                                        <th class="py-3.5 px-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="defects-table-body" class="divide-y divide-slate-100 text-sm">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="defects-empty-state" class="hidden p-12 text-center">
+                            <div
+                                class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <h4 class="text-base font-bold text-slate-700">No Defects Logged</h4>
+                            <p class="text-sm text-slate-500 mt-1">Great job! No bugs are currently tracked in this
+                                workspace.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= 5. REPORTS TAB ================= -->
+                <div id="tab-reports" class="tab-content space-y-6">
+                    <div
+                        class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg">Test Reports & Analytics</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Export test reports or analyze QA metrics
+                                comprehensively.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="exportReportJSON()"
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-code text-xs"></i> Export JSON
+                            </button>
+                            <button onclick="exportReportCSV()"
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-file-csv text-xs"></i> Export CSV
+                            </button>
+                            <button onclick="exportReportPDFMock()"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-4 py-2 rounded-xl shadow-md transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-file-pdf text-xs"></i> Print / PDF Mockup
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Report Summary Cards & Breakdown -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Module Wise Pass/Fail Breakdown -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                            <h3 class="font-bold text-slate-800 text-base mb-4">Module-wise Test Coverage & Pass Rate
+                            </h3>
+                            <div id="report-module-breakdown" class="space-y-4">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Priority & Type Distribution -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base mb-3">Priority Distribution</h3>
+                                <div id="report-priority-breakdown" class="space-y-2">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                            <div class="pt-4 border-t border-slate-100">
+                                <h3 class="font-bold text-slate-800 text-base mb-3">Test Type Breakdown</h3>
+                                <div id="report-type-breakdown" class="space-y-2">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= MODALS ================= -->
+
+
+    <!-- 1. Test Case Modal (Add/Edit) -->
+    <div id="modal-testcase"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 id="tc-modal-title" class="font-bold text-slate-800 text-lg">Create Test Case</h3>
+                <button onclick="closeTestCaseModal()"
+                    class="w-8 h-8 rounded-full bg-slate-200/60 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <input type="hidden" id="tc-edit-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Title
+                            *</label>
+                        <input type="text" id="tc-form-title"
+                            placeholder="e.g. Verify valid user login with correct credentials"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Module /
+                            Component *</label>
+                        <input type="text" id="tc-form-module" placeholder="e.g. Authentication, Checkout, User Profile"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Type</label>
+                        <select id="tc-form-type"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="Functional">Functional</option>
+                            <option value="Integration">Integration</option>
+                            <option value="Regression">Regression</option>
+                            <option value="Smoke">Smoke</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Priority</label>
+                        <select id="tc-form-priority"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="High">High</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Assigned
+                            To</label>
+                        <input type="text" id="tc-form-assignee" placeholder="e.g. Alex Smith"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label
+                        class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Preconditions</label>
+                    <input type="text" id="tc-form-preconditions"
+                        placeholder="e.g. User must be registered and on login page"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Test Steps &
+                        Expected Results *</label>
+                    <textarea id="tc-form-steps" rows="4"
+                        placeholder="1. Enter valid email and password&#10;2. Click Login button&#10;Expected: User is redirected to dashboard successfully."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500 font-mono text-xs"></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
+                <button onclick="closeTestCaseModal()"
+                    class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors">Cancel</button>
+                <button onclick="saveTestCase()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-5 py-2 rounded-xl shadow-md transition-all">Save
+                    Test Case</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Test Run Modal (Create) -->
+    <div id="modal-testrun"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 class="font-bold text-slate-800 text-lg">Create Test Run / Execution Cycle</h3>
+                <button onclick="closeTestRunModal()"
+                    class="w-8 h-8 rounded-full bg-slate-200/60 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Test Run Title
+                        *</label>
+                    <input type="text" id="tr-form-title" placeholder="e.g. Sprint 14 Regression Cycle"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Milestone /
+                        Version</label>
+                    <input type="text" id="tr-form-milestone" placeholder="e.g. v2.4-RC1"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Select Test
+                        Cases to Include (<span id="tr-selected-count">0</span> selected)</label>
+                    <div id="tr-testcases-selector"
+                        class="max-h-60 overflow-y-auto border border-slate-200 rounded-xl p-3 space-y-2 bg-slate-50">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
+                <button onclick="closeTestRunModal()"
+                    class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors">Cancel</button>
+                <button onclick="saveTestRun()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-5 py-2 rounded-xl shadow-md transition-all">Create
+                    Run</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Test Execution Runner Modal -->
+    <div id="modal-runner"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+                <div>
+                    <span id="runner-run-name"
+                        class="text-xs font-semibold uppercase tracking-wider text-indigo-400">Test Run</span>
+                    <h3 id="runner-tc-title" class="font-bold text-lg text-white mt-0.5">Test Case Execution</h3>
+                </div>
+                <button onclick="closeRunnerModal()"
+                    class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50">
+                <!-- Details Card -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between text-xs font-semibold">
+                        <span id="runner-tc-id"
+                            class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md">TC-001</span>
+                        <span id="runner-tc-module" class="text-slate-500">Module: Auth</span>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Preconditions</h4>
+                        <p id="runner-tc-preconditions" class="text-sm text-slate-700 italic">-</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Test Steps & Expected
+                            Results</h4>
+                        <div id="runner-tc-steps"
+                            class="text-sm text-slate-800 font-mono bg-slate-50 p-3 rounded-lg border border-slate-200 whitespace-pre-wrap">
+                            -</div>
+                    </div>
+                </div>
+
+                <!-- Execution Actions Form -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <h4 class="font-bold text-slate-800 text-sm">Log Test Result</h4>
+                    <input type="hidden" id="runner-run-id">
+                    <input type="hidden" id="runner-tcid">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Tester
+                                Name</label>
+                            <input type="text" id="runner-tester" value="Alex Smith"
+                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Actual
+                            Results & Notes</label>
+                        <textarea id="runner-notes" rows="3" placeholder="Enter observations during test execution..."
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 pt-2">
+                        <button onclick="submitExecutionResult('Passed')"
+                            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i> Pass
+                        </button>
+                        <button onclick="submitExecutionResult('Failed')"
+                            class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-xmark"></i> Fail & Report Bug
+                        </button>
+                        <button onclick="submitExecutionResult('Blocked')"
+                            class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Blocked
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Defect Modal (Create/Edit) -->
+    <div id="modal-defect"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 class="font-bold text-slate-800 text-lg">Report / Edit Defect</h3>
+                <button onclick="closeDefectModal()"
+                    class="w-8 h-8 rounded-full bg-slate-200/60 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <input type="hidden" id="defect-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Defect Title
+                        *</label>
+                    <input type="text" id="defect-title"
+                        placeholder="e.g. 500 Server error upon password reset submission"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label
+                            class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Severity</label>
+                        <select id="defect-severity"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="Critical">Critical</option>
+                            <option value="Major" selected>Major</option>
+                            <option value="Minor">Minor</option>
+                            <option value="Trivial">Trivial</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Status</label>
+                        <select id="defect-status"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Linked Test
+                        Case</label>
+                    <select id="defect-testcase"
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="">None / Standalone bug</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description &
+                        Steps to Reproduce</label>
+                    <textarea id="defect-description" rows="4" placeholder="Detail how to reproduce the bug..."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-3">
+                <button onclick="closeDefectModal()"
+                    class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors">Cancel</button>
+                <button onclick="saveDefect()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-5 py-2 rounded-xl shadow-md transition-all">Save
+                    Defect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast"
+        class="fixed bottom-6 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-3 transform translate-y-24 opacity-0 transition-all duration-300">
+        <div id="toast-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></div>
+        <div id="toast-msg" class="text-sm font-medium">Action completed successfully</div>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+
+    <script>
+        // State management & LocalStorage persistence
+        let state = {
+            testCases: [],
+            testRuns: [],
+            defects: [],
+            activeTab: 'dashboard'
+        };
+
+        const STORAGE_KEY = 'testmatrix_app_data_v1';
+
+        function saveToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                try {
+                    state = JSON.parse(data);
+                } catch (e) {
+                    console.error('Error parsing storage', e);
+                }
+            } else {
+                loadDemoData(false); // First load
+            }
+        }
+
+        // Demo Data Loader
+        function loadDemoData(showMsg = true) {
+            state = {
+                testCases: [
+                    { id: 'TC-001', title: 'Verify user login with valid email and password', module: 'Authentication', type: 'Functional', priority: 'High', status: 'Passed', assignedTo: 'Alex Smith', preconditions: 'User account registered', steps: '1. Enter email\n2. Enter password\n3. Click Login\nExpected: Dashboard loads' },
+                    { id: 'TC-002', title: 'Verify error message with invalid password', module: 'Authentication', type: 'Functional', priority: 'Medium', status: 'Passed', assignedTo: 'Alex Smith', preconditions: 'On login page', steps: '1. Enter email\n2. Enter wrong password\n3. Click Login\nExpected: Invalid credentials error' },
+                    { id: 'TC-003', title: 'Checkout item with valid credit card payment', module: 'Checkout', type: 'Regression', priority: 'High', status: 'Failed', assignedTo: 'Sarah Connor', preconditions: 'Cart has 1 item', steps: '1. Go to checkout\n2. Enter Stripe card info\n3. Place order\nExpected: Order success screen' },
+                    { id: 'TC-004', title: 'Apply discount promo code to shopping cart', module: 'Cart', type: 'Functional', priority: 'Medium', status: 'Blocked', assignedTo: 'Alex Smith', preconditions: 'Promo API active', steps: '1. Enter promo code SAVE20\n2. Apply\nExpected: Total discounted by 20%' },
+                    { id: 'TC-005', title: 'User profile avatar image upload size limit check', module: 'User Profile', type: 'Functional', priority: 'Low', status: 'Not Executed', assignedTo: 'John Doe', preconditions: 'Logged in as customer', steps: '1. Upload 10MB image\n2. Save profile\nExpected: Validation error for max file size 5MB' },
+                    { id: 'TC-006', title: 'Smoke test core landing page load and CTA buttons', module: 'Landing', type: 'Smoke', priority: 'High', status: 'Passed', assignedTo: 'Sarah Connor', preconditions: 'None', steps: '1. Open root URL\n2. Verify hero image and CTA links\nExpected: Page loads under 1.5s' }
+                ],
+                testRuns: [
+                    {
+                        id: 'TR-101',
+                        title: 'Sprint 14 Regression Cycle',
+                        milestone: 'v2.4-RC1',
+                        createdAt: '2026-10-10',
+                        cases: [
+                            { tcid: 'TC-001', status: 'Passed', tester: 'Alex Smith', notes: 'Passed smoothly', timestamp: '2026-10-10 10:30' },
+                            { tcid: 'TC-003', status: 'Failed', tester: 'Sarah Connor', notes: 'Stripe gateway timed out', timestamp: '2026-10-10 11:15' },
+                            { tcid: 'TC-004', status: 'Blocked', tester: 'Alex Smith', notes: 'Promo service down', timestamp: '2026-10-10 12:00' }
+                        ]
+                    },
+                    {
+                        id: 'TR-102',
+                        title: 'Release v1.2 Smoke Test',
+                        milestone: 'v1.2-RELEASE',
+                        createdAt: '2026-10-11',
+                        cases: [
+                            { tcid: 'TC-006', status: 'Passed', tester: 'Sarah Connor', notes: 'All buttons responsive', timestamp: '2026-10-11 09:00' },
+                            { tcid: 'TC-002', status: 'Passed', tester: 'Alex Smith', notes: 'Error messaging correct', timestamp: '2026-10-11 09:30' }
+                        ]
+                    }
+                ],
+                defects: [
+                    { id: 'BUG-001', title: 'Stripe payment gateway timeout on checkout', severity: 'Critical', status: 'Open', testcase: 'TC-003', description: 'When submitting valid card details in checkout, the API throws gateway timeout 504.', reportedDate: '2026-10-10' },
+                    { id: 'BUG-002', title: 'Promo code SAVE20 returns 404 endpoint not found', severity: 'Major', status: 'In Progress', testcase: 'TC-004', description: 'Promo code service microservice is unreachable.', reportedDate: '2026-10-10' }
+                ],
+                activeTab: 'dashboard'
+            };
+            saveToLocalStorage();
+            refreshAllViews();
+            if (showMsg) showToast('Demo data loaded successfully!');
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to reset all data?')) {
+                state = { testCases: [], testRuns: [], defects: [], activeTab: 'dashboard' };
+                saveToLocalStorage();
+                refreshAllViews();
+                showToast('Workspace reset successfully.');
+            }
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Update sidebar highlights
+            ['dashboard', 'testcases', 'testruns', 'defects', 'reports'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tabId) {
+                    btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30';
+                } else {
+                    btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-300 hover:bg-slate-800/80 hover:text-white';
+                }
+            });
+
+            // Set title
+            const titles = { dashboard: 'Dashboard Overview', testcases: 'Test Cases Management', testruns: 'Test Runs & Cycles', defects: 'Defect / Bug Tracker', reports: 'Reports & Analytics' };
+            document.getElementById('page-title').innerText = titles[tabId];
+
+            refreshAllViews();
+        }
+
+        function refreshAllViews() {
+            renderDashboard();
+            renderTestCasesTable();
+            renderTestRunsGrid();
+            renderDefectsTable();
+            renderReports();
+            populateDropdowns();
+        }
+
+        // ================= DASHBOARD RENDERING =================
+        function renderDashboard() {
+            const tcs = state.testCases;
+            const total = tcs.length;
+            const passed = tcs.filter(t => t.status === 'Passed').length;
+            const failed = tcs.filter(t => t.status === 'Failed').length;
+            const blocked = tcs.filter(t => t.status === 'Blocked').length;
+            const untested = tcs.filter(t => t.status === 'Not Executed').length;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-passed').innerText = passed;
+            document.getElementById('stat-failed').innerText = failed;
+            document.getElementById('stat-blocked').innerText = blocked;
+
+            const executedCount = passed + failed + blocked;
+            const passRate = executedCount > 0 ? Math.round((passed / executedCount) * 100) : 0;
+            document.getElementById('stat-passrate').innerText = passRate + '%';
+
+            // Stacked bar
+            if (total > 0) {
+                document.getElementById('bar-passed').style.width = (passed / total * 100) + '%';
+                document.getElementById('bar-failed').style.width = (failed / total * 100) + '%';
+                document.getElementById('bar-blocked').style.width = (blocked / total * 100) + '%';
+                document.getElementById('bar-untested').style.width = (untested / total * 100) + '%';
+                const execRatio = Math.round((executedCount / total) * 100);
+                document.getElementById('exec-ratio-text').innerText = execRatio + ' % Executed';
+            } else {
+                document.getElementById('bar-passed').style.width = '0%';
+                document.getElementById('bar-failed').style.width = '0%';
+                document.getElementById('bar-blocked').style.width = '0%';
+                document.getElementById('bar-untested').style.width = '100%';
+                document.getElementById('exec-ratio-text').innerText = '0% Executed';
+            }
+
+            document.getElementById('count-passed').innerText = passed;
+            document.getElementById('count-failed').innerText = failed;
+            document.getElementById('count-blocked').innerText = blocked;
+            document.getElementById('count-untested').innerText = untested;
+
+            // Module summary cards
+            const modulesMap = {};
+            tcs.forEach(tc => {
+                const m = tc.module || 'General';
+                if (!modulesMap[m]) modulesMap[m] = { total: 0, passed: 0, failed: 0 };
+                modulesMap[m].total++;
+                if (tc.status === 'Passed') modulesMap[m].passed++;
+                if (tc.status === 'Failed') modulesMap[m].failed++;
+            });
+
+            const modContainer = document.getElementById('dashboard-modules-list');
+            modContainer.innerHTML = '';
+            if (Object.keys(modulesMap).length === 0) {
+                modContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No modules recorded yet.</p>';
+            } else {
+                for (let mod in modulesMap) {
+                    const data = modulesMap[mod];
+                    const rate = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
+                    modContainer.innerHTML += `
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-800">${mod}</h4>
+                                <span class="text-xs text-slate-500">${data.total} test cases (${data.passed} passed)</span>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${rate >= 75 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${rate}% Pass</span>
+                        </div>
+                    `;
+                }
+            }
+
+            // Dashboard active runs
+            const runsContainer = document.getElementById('dashboard-runs-list');
+            runsContainer.innerHTML = '';
+            if (state.testRuns.length === 0) {
+                runsContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No active test runs.</p>';
+            } else {
+                state.testRuns.slice(0, 3).forEach(run => {
+                    runsContainer.innerHTML += `
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-800">${run.title}</h4>
+                                <span class="text-xs text-slate-500">Milestone: ${run.milestone || 'N/A'} • ${run.cases.length} tests</span>
+                            </div>
+                            <button onclick="switchTab('testruns')" class="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold rounded-lg transition-colors">Run</button>
+                        </div>
+                    `;
+                });
+            }
+
+            // Dashboard defects
+            const defContainer = document.getElementById('dashboard-defects-list');
+            defContainer.innerHTML = '';
+            if (state.defects.length === 0) {
+                defContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No open defects.</p>';
+            } else {
+                state.defects.slice(0, 3).forEach(bug => {
+                    defContainer.innerHTML += `
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono font-bold text-rose-600">${bug.id}</span>
+                                    <h4 class="font-semibold text-sm text-slate-800 truncate max-w-[200px]">${bug.title}</h4>
+                                </div>
+                                <span class="text-xs text-slate-500">Severity: ${bug.severity} • Status: ${bug.status}</span>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-rose-50 text-rose-700">${bug.severity}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // ================= TEST CASES MANAGEMENT =================
+        let selectedTCIds = new Set();
+
+        function populateDropdowns() {
+            // Module filter dropdown
+            const moduleSelect = document.getElementById('tc-filter-module');
+            const currentModVal = moduleSelect.value;
+            const modules = [...new Set(state.testCases.map(t => t.module))].filter(Boolean);
+            moduleSelect.innerHTML = '<option value="">All Modules</option>' + modules.map(m => `<option value="${m}" ${m === currentModVal ? 'selected' : ''}>${m}</option>`).join('');
+
+            // Defect linked test case dropdown
+            const defectTcSelect = document.getElementById('defect-testcase');
+            defectTcSelect.innerHTML = '<option value="">None / Standalone bug</option>' + state.testCases.map(t => `<option value="${t.id}">${t.id}: ${t.title}</option>`).join('');
+        }
+
+        function renderTestCasesTable() {
+            const searchQuery = (document.getElementById('tc-search').value || '').toLowerCase();
+            const modFilter = document.getElementById('tc-filter-module').value;
+            const priFilter = document.getElementById('tc-filter-priority').value;
+            const statFilter = document.getElementById('tc-filter-status').value;
+
+            const tbody = document.getElementById('testcases-table-body');
+            const emptyState = document.getElementById('tc-empty-state');
+            tbody.innerHTML = '';
+
+            const filtered = state.testCases.filter(tc => {
+                const matchSearch = tc.id.toLowerCase().includes(searchQuery) || tc.title.toLowerCase().includes(searchQuery);
+                const matchMod = !modFilter || tc.module === modFilter;
+                const matchPri = !priFilter || tc.priority === priFilter;
+                const matchStat = !statFilter || tc.status === statFilter;
+                return matchSearch && matchMod && matchPri && matchStat;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(tc => {
+                    const isChecked = selectedTCIds.has(tc.id);
+                    const statusBadgeClass = {
+                        'Passed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        'Failed': 'bg-rose-50 text-rose-700 border-rose-200',
+                        'Blocked': 'bg-amber-50 text-amber-700 border-amber-200',
+                        'Not Executed': 'bg-slate-100 text-slate-600 border-slate-200'
+                    }[tc.status] || 'bg-slate-100 text-slate-600 border-slate-200';
+
+                    const priorityBadgeClass = {
+                        'High': 'text-rose-600 bg-rose-50',
+                        'Medium': 'text-amber-600 bg-amber-50',
+                        'Low': 'text-emerald-600 bg-emerald-50'
+                    }[tc.priority] || 'text-slate-600 bg-slate-100';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                            <td class="py-3 px-4">
+                                <input type="checkbox" onclick="toggleSelectTC('${tc.id}', this)" ${isChecked ? 'checked' : ''} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                            </td>
+                            <td class="py-3 px-4 font-mono font-bold text-indigo-600 text-xs">${tc.id}</td>
+                            <td class="py-3 px-4">
+                                <div class="font-semibold text-slate-800">${tc.title}</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Module: <span class="text-slate-600 font-medium">${tc.module}</span></div>
+                            </td>
+                            <td class="py-3 px-4 text-xs font-medium text-slate-600">${tc.type}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold ${priorityBadgeClass}">${tc.priority}</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${statusBadgeClass}">${tc.status}</span>
+                            </td>
+                            <td class="py-3 px-4 text-xs text-slate-600">${tc.assignedTo || 'Unassigned'}</td>
+                            <td class="py-3 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="duplicateTestCase('${tc.id}')" title="Duplicate" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"><i class="fa-solid fa-copy text-xs"></i></button>
+                                    <button onclick="editTestCase('${tc.id}')" title="Edit" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    <button onclick="deleteTestCase('${tc.id}')" title="Delete" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('tc-selection-count').innerText = `${selectedTCIds.size} test cases selected`;
+        }
+
+        function toggleSelectTC(id, checkbox) {
+            if (checkbox.checked) selectedTCIds.add(id);
+            else selectedTCIds.delete(id);
+            document.getElementById('tc-selection-count').innerText = `${selectedTCIds.size} test cases selected`;
+        }
+
+        function toggleSelectAllTC(masterCheckbox) {
+            if (masterCheckbox.checked) {
+                state.testCases.forEach(t => selectedTCIds.add(t.id));
+            } else {
+                selectedTCIds.clear();
+            }
+            renderTestCasesTable();
+        }
+
+        // Test Case Modal Control
+        function openTestCaseModal(editId = null) {
+            document.getElementById('modal-testcase').classList.remove('hidden');
+            if (editId) {
+                document.getElementById('tc-modal-title').innerText = 'Edit Test Case';
+                const tc = state.testCases.find(t => t.id === editId);
+                if (tc) {
+                    document.getElementById('tc-edit-id').value = tc.id;
+                    document.getElementById('tc-form-title').value = tc.title;
+                    document.getElementById('tc-form-module').value = tc.module;
+                    document.getElementById('tc-form-type').value = tc.type;
+                    document.getElementById('tc-form-priority').value = tc.priority;
+                    document.getElementById('tc-form-assignee').value = tc.assignedTo;
+                    document.getElementById('tc-form-preconditions').value = tc.preconditions;
+                    document.getElementById('tc-form-steps').value = tc.steps;
+                }
+            } else {
+                document.getElementById('tc-modal-title').innerText = 'Create Test Case';
+                document.getElementById('tc-edit-id').value = '';
+                document.getElementById('tc-form-title').value = '';
+                document.getElementById('tc-form-module').value = '';
+                document.getElementById('tc-form-type').value = 'Functional';
+                document.getElementById('tc-form-priority').value = 'Medium';
+                document.getElementById('tc-form-assignee').value = 'Alex Smith';
+                document.getElementById('tc-form-preconditions').value = '';
+                document.getElementById('tc-form-steps').value = '';
+            }
+        }
+
+        function closeTestCaseModal() {
+            document.getElementById('modal-testcase').classList.add('hidden');
+        }
+
+        function saveTestCase() {
+            const editId = document.getElementById('tc-edit-id').value;
+            const title = document.getElementById('tc-form-title').value.trim();
+            const module = document.getElementById('tc-form-module').value.trim();
+            const type = document.getElementById('tc-form-type').value;
+            const priority = document.getElementById('tc-form-priority').value;
+            const assignedTo = document.getElementById('tc-form-assignee').value.trim();
+            const preconditions = document.getElementById('tc-form-preconditions').value.trim();
+            const steps = document.getElementById('tc-form-steps').value.trim();
+
+            if (!title || !module || !steps) {
+                showToast('Please fill in required fields (Title, Module, Steps).', 'error');
+                return;
+            }
+
+            if (editId) {
+                const tc = state.testCases.find(t => t.id === editId);
+                if (tc) {
+                    tc.title = title;
+                    tc.module = module;
+                    tc.type = type;
+                    tc.priority = priority;
+                    tc.assignedTo = assignedTo;
+                    tc.preconditions = preconditions;
+                    tc.steps = steps;
+                }
+                showToast('Test case updated successfully.');
+            } else {
+                // Generate next ID
+                const nextNum = state.testCases.length + 1;
+                const newId = 'TC-' + String(nextNum).padStart(3, '0');
+                state.testCases.push({
+                    id: newId,
+                    title,
+                    module,
+                    type,
+                    priority,
+                    status: 'Not Executed',
+                    assignedTo,
+                    preconditions,
+                    steps
+                });
+                showToast('New test case created successfully.');
+            }
+
+            saveToLocalStorage();
+            refreshAllViews();
+            closeTestCaseModal();
+        }
+
+        function editTestCase(id) {
+            openTestCaseModal(id);
+        }
+
+        function duplicateTestCase(id) {
+            const tc = state.testCases.find(t => t.id === id);
+            if (tc) {
+                const nextNum = state.testCases.length + 1;
+                const newId = 'TC-' + String(nextNum).padStart(3, '0');
+                state.testCases.push({
+                    ...tc,
+                    id: newId,
+                    title: tc.title + ' (Copy)',
+                    status: 'Not Executed'
+                });
+                saveToLocalStorage();
+                refreshAllViews();
+                showToast(`Duplicated as ${newId}`);
+            }
+        }
+
+        function deleteTestCase(id) {
+            if (confirm(`Are you sure you want to delete test case ${id}?`)) {
+                state.testCases = state.testCases.filter(t => t.id !== id);
+                selectedTCIds.delete(id);
+                saveToLocalStorage();
+                refreshAllViews();
+                showToast('Test case deleted.');
+            }
+        }
+
+        function bulkDeleteTC() {
+            if (selectedTCIds.size === 0) {
+                showToast('No test cases selected.', 'error');
+                return;
+            }
+            if (confirm(`Delete ${selectedTCIds.size} selected test cases?`)) {
+                state.testCases = state.testCases.filter(t => !selectedTCIds.has(t.id));
+                selectedTCIds.clear();
+                saveToLocalStorage();
+                refreshAllViews();
+                showToast('Selected test cases deleted.');
+            }
+        }
+
+        // ================= TEST RUNS & EXECUTION =================
+        function renderTestRunsGrid() {
+            const grid = document.getElementById('testruns-grid');
+            const emptyState = document.getElementById('runs-empty-state');
+            grid.innerHTML = '';
+
+            if (state.testRuns.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            state.testRuns.forEach(run => {
+                const totalInRun = run.cases.length;
+                const passedInRun = run.cases.filter(c => c.status === 'Passed').length;
+                const failedInRun = run.cases.filter(c => c.status === 'Failed').length;
+                const blockedInRun = run.cases.filter(c => c.status === 'Blocked').length;
+                const progressPct = totalInRun > 0 ? Math.round(((passedInRun + failedInRun + blockedInRun) / totalInRun) * 100) : 0;
+
+                let casesHtml = '';
+                run.cases.forEach(rc => {
+                    const fullTc = state.testCases.find(t => t.id === rc.tcid);
+                    const title = fullTc ? fullTc.title : rc.tcid;
+                    const badgeColor = {
+                        'Passed': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        'Failed': 'bg-rose-50 text-rose-700 border-rose-200',
+                        'Blocked': 'bg-amber-50 text-amber-700 border-amber-200',
+                        'Not Executed': 'bg-slate-100 text-slate-600 border-slate-200'
+                    }[rc.status] || 'bg-slate-100 text-slate-600';
+
+                    casesHtml += `
+                        <div class="p-3 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-100 flex items-center justify-between gap-3 transition-colors">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs font-bold text-indigo-600">${rc.tcid}</span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded border ${badgeColor}">${rc.status}</span>
+                                </div>
+                                <p class="text-xs text-slate-700 truncate mt-0.5">${title}</p>
+                            </div>
+                            <button onclick="openRunnerModal('${run.id}', '${rc.tcid}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition-colors shrink-0">Execute</button>
+                        </div>
+                    `;
+                });
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col overflow-hidden">
+                        <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <div class="flex items-center justify-between mb-1">
+                                <h4 class="font-bold text-slate-800 text-base">${run.title}</h4>
+                                <button onclick="deleteTestRun('${run.id}')" class="text-slate-400 hover:text-rose-600 transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-500">
+                                <span>Milestone: <strong class="text-slate-700">${run.milestone || 'N/A'}</strong></span>
+                                <span>•</span>
+                                <span>Created: ${run.createdAt}</span>
+                            </div>
+                            <!-- Progress Bar -->
+                            <div class="mt-4 space-y-1">
+                                <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+                                    <span>Execution Progress</span>
+                                    <span>${progressPct}%</span>
+                                </div>
+                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="bg-indigo-600 h-full transition-all duration-300" style="width: ${progressPct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 space-y-2.5 flex-1 overflow-y-auto max-h-72">
+                            ${casesHtml || '<p class="text-xs text-slate-400 italic">No test cases in this run.</p>'}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openTestRunModal() {
+            document.getElementById('modal-testrun').classList.remove('hidden');
+            document.getElementById('tr-form-title').value = '';
+            document.getElementById('tr-form-milestone').value = '';
+
+            const container = document.getElementById('tr-testcases-selector');
+            container.innerHTML = '';
+            if (state.testCases.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic">No test cases available. Create test cases first.</p>';
+                return;
+            }
+
+            state.testCases.forEach(tc => {
+                container.innerHTML += `
+                    <label class="flex items-center gap-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer">
+                        <input type="checkbox" value="${tc.id}" class="tr-tc-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="updateTrSelectedCount()">
+                        <div class="text-xs">
+                            <span class="font-mono font-bold text-indigo-600">${tc.id}</span>
+                            <span class="text-slate-700 font-medium ml-1">${tc.title}</span>
+                        </div>
+                    </label>
+                `;
+            });
+            updateTrSelectedCount();
+        }
+
+        function updateTrSelectedCount() {
+            const count = document.querySelectorAll('.tr-tc-checkbox:checked').length;
+            document.getElementById('tr-selected-count').innerText = count;
+        }
+
+        function closeTestRunModal() {
+            document.getElementById('modal-testrun').classList.add('hidden');
+        }
+
+        function saveTestRun() {
+            const title = document.getElementById('tr-form-title').value.trim();
+            const milestone = document.getElementById('tr-form-milestone').value.trim();
+            const checkedBoxes = document.querySelectorAll('.tr-tc-checkbox:checked');
+
+            if (!title) {
+                showToast('Please enter a Test Run title.', 'error');
+                return;
+            }
+            if (checkedBoxes.length === 0) {
+                showToast('Please select at least one test case for this run.', 'error');
+                return;
+            }
+
+            const cases = Array.from(checkedBoxes).map(cb => ({
+                tcid: cb.value,
+                status: 'Not Executed',
+                tester: '',
+                notes: '',
+                timestamp: '-'
+            }));
+
+            const nextRunNum = state.testRuns.length + 1;
+            const newRunId = 'TR-' + (100 + nextRunNum);
+
+            state.testRuns.push({
+                id: newRunId,
+                title,
+                milestone,
+                createdAt: new Date().toISOString().split('T')[0],
+                cases
+            });
+
+            saveToLocalStorage();
+            refreshAllViews();
+            closeTestRunModal();
+            showToast('Test Run created successfully.');
+        }
+
+        function deleteTestRun(runId) {
+            if (confirm('Are you sure you want to delete this test run?')) {
+                state.testRuns = state.testRuns.filter(r => r.id !== runId);
+                saveToLocalStorage();
+                refreshAllViews();
+                showToast('Test Run deleted.');
+            }
+        }
+
+        // Execution Runner Modal
+        function openRunnerModal(runId, tcid) {
+            const run = state.testRuns.find(r => r.id === runId);
+            const tc = state.testCases.find(t => t.id === tcid);
+            const rc = run ? run.cases.find(c => c.tcid === tcid) : null;
+
+            if (!run || !tc) return;
+
+            document.getElementById('modal-runner').classList.remove('hidden');
+            document.getElementById('runner-run-id').value = runId;
+            document.getElementById('runner-tcid').value = tcid;
+            document.getElementById('runner-run-name').innerText = `Run: ${run.title}`;
+            document.getElementById('runner-tc-title').innerText = tc.title;
+            document.getElementById('runner-tc-id').innerText = tc.id;
+            document.getElementById('runner-tc-module').innerText = `Module: ${tc.module} | Type: ${tc.type}`;
+            document.getElementById('runner-tc-preconditions').innerText = tc.preconditions || 'None';
+            document.getElementById('runner-tc-steps').innerText = tc.steps;
+            document.getElementById('runner-notes').value = rc && rc.notes ? rc.notes : '';
+            if (rc && rc.tester) document.getElementById('runner-tester').value = rc.tester;
+        }
+
+        function closeRunnerModal() {
+            document.getElementById('modal-runner').classList.add('hidden');
+        }
+
+        function submitExecutionResult(status) {
+            const runId = document.getElementById('runner-run-id').value;
+            const tcid = document.getElementById('runner-tcid').value;
+            const tester = document.getElementById('runner-tester').value.trim() || 'Alex Smith';
+            const notes = document.getElementById('runner-notes').value.trim();
+            const timestamp = new Date().toLocaleString();
+
+            const run = state.testRuns.find(r => r.id === runId);
+            if (run) {
+                const rc = run.cases.find(c => c.tcid === tcid);
+                if (rc) {
+                    rc.status = status;
+                    rc.tester = tester;
+                    rc.notes = notes;
+                    rc.timestamp = timestamp;
+                }
+            }
+
+            // Also update overall test case status
+            const tc = state.testCases.find(t => t.id === tcid);
+            if (tc) {
+                tc.status = status;
+                tc.assignedTo = tester;
+            }
+
+            // If Failed, offer or auto-create defect
+            if (status === 'Failed') {
+                state.defects.push({
+                    id: 'BUG-' + String(state.defects.length + 1).padStart(3, '0'),
+                    title: `Failure in ${tc ? tc.title : tcid}`,
+                    severity: 'Major',
+                    status: 'Open',
+                    testcase: tcid,
+                    description: notes || 'Test case failed during execution run.',
+                    reportedDate: new Date().toISOString().split('T')[0]
+                });
+                showToast('Test marked as Failed & Defect auto-logged!', 'error');
+            } else {
+                showToast(`Test marked as ${status}!`);
+            }
+
+            saveToLocalStorage();
+            refreshAllViews();
+            closeRunnerModal();
+        }
+
+        // ================= DEFECT TRACKING =================
+        function renderDefectsTable() {
+            const tbody = document.getElementById('defects-table-body');
+            const emptyState = document.getElementById('defects-empty-state');
+            tbody.innerHTML = '';
+
+            if (state.defects.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            state.defects.forEach(bug => {
+                const sevClass = {
+                    'Critical': 'bg-rose-50 text-rose-700 border-rose-200',
+                    'Major': 'bg-amber-50 text-amber-700 border-amber-200',
+                    'Minor': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                    'Trivial': 'bg-slate-100 text-slate-600 border-slate-200'
+                }[bug.severity] || 'bg-slate-100 text-slate-600';
+
+                const statusClass = {
+                    'Open': 'bg-rose-50 text-rose-700 border-rose-200',
+                    'In Progress': 'bg-amber-50 text-amber-700 border-amber-200',
+                    'Resolved': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    'Closed': 'bg-slate-100 text-slate-600 border-slate-200'
+                }[bug.status] || 'bg-slate-100 text-slate-600';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                        <td class="py-3 px-4 font-mono font-bold text-rose-600 text-xs">${bug.id}</td>
+                        <td class="py-3 px-4">
+                            <div class="font-semibold text-slate-800">${bug.title}</div>
+                            <div class="text-xs text-slate-500 mt-0.5 truncate max-w-xs">${bug.description || ''}</div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${sevClass}">${bug.severity}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${statusClass}">${bug.status}</span>
+                        </td>
+                        <td class="py-3 px-4 font-mono text-xs text-indigo-600 font-semibold">${bug.testcase || 'None'}</td>
+                        <td class="py-3 px-4 text-xs text-slate-500">${bug.reportedDate}</td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <button onclick="editDefect('${bug.id}')" title="Edit" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="deleteDefect('${bug.id}')" title="Delete" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openDefectModal(editId = null) {
+            document.getElementById('modal-defect').classList.remove('hidden');
+            populateDropdowns();
+
+            if (editId) {
+                const bug = state.defects.find(b => b.id === editId);
+                if (bug) {
+                    document.getElementById('defect-id').value = bug.id;
+                    document.getElementById('defect-title').value = bug.title;
+                    document.getElementById('defect-severity').value = bug.severity;
+                    document.getElementById('defect-status').value = bug.status;
+                    document.getElementById('defect-testcase').value = bug.testcase || '';
+                    document.getElementById('defect-description').value = bug.description;
+                }
+            } else {
+                document.getElementById('defect-id').value = '';
+                document.getElementById('defect-title').value = '';
+                document.getElementById('defect-severity').value = 'Major';
+                document.getElementById('defect-status').value = 'Open';
+                document.getElementById('defect-testcase').value = '';
+                document.getElementById('defect-description').value = '';
+            }
+        }
+
+        function closeDefectModal() {
+            document.getElementById('modal-defect').classList.add('hidden');
+        }
+
+        function saveDefect() {
+            const editId = document.getElementById('defect-id').value;
+            const title = document.getElementById('defect-title').value.trim();
+            const severity = document.getElementById('defect-severity').value;
+            const status = document.getElementById('defect-status').value;
+            const testcase = document.getElementById('defect-testcase').value;
+            const description = document.getElementById('defect-description').value.trim();
+
+            if (!title) {
+                showToast('Please enter defect title.', 'error');
+                return;
+            }
+
+            if (editId) {
+                const bug = state.defects.find(b => b.id === editId);
+                if (bug) {
+                    bug.title = title;
+                    bug.severity = severity;
+                    bug.status = status;
+                    bug.testcase = testcase;
+                    bug.description = description;
+                }
+                showToast('Defect updated.');
+            } else {
+                const newBugId = 'BUG-' + String(state.defects.length + 1).padStart(3, '0');
+                state.defects.push({
+                    id: newBugId,
+                    title,
+                    severity,
+                    status,
+                    testcase,
+                    description,
+                    reportedDate: new Date().toISOString().split('T')[0]
+                });
+                showToast('Defect reported successfully.');
+            }
+
+            saveToLocalStorage();
+            refreshAllViews();
+            closeDefectModal();
+        }
+
+        function editDefect(id) {
+            openDefectModal(id);
+        }
+
+        function deleteDefect(id) {
+            if (confirm(`Delete defect ${id}?`)) {
+                state.defects = state.defects.filter(b => b.id !== id);
+                saveToLocalStorage();
+                refreshAllViews();
+                showToast('Defect deleted.');
+            }
+        }
+
+        // ================= REPORTS & EXPORT =================
+        function renderReports() {
+            // Module breakdown
+            const modMap = {};
+            state.testCases.forEach(tc => {
+                const m = tc.module || 'General';
+                if (!modMap[m]) modMap[m] = { total: 0, passed: 0, failed: 0, blocked: 0, untested: 0 };
+                modMap[m].total++;
+                if (tc.status === 'Passed') modMap[m].passed++;
+                else if (tc.status === 'Failed') modMap[m].failed++;
+                else if (tc.status === 'Blocked') modMap[m].blocked++;
+                else modMap[m].untested++;
+            });
+
+            const modContainer = document.getElementById('report-module-breakdown');
+            modContainer.innerHTML = '';
+            if (Object.keys(modMap).length === 0) {
+                modContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No data to display.</p>';
+            } else {
+                for (let m in modMap) {
+                    const d = modMap[m];
+                    const passPct = d.total > 0 ? Math.round((d.passed / d.total) * 100) : 0;
+                    modContainer.innerHTML += `
+                        <div class="space-y-1.5 p-3.5 bg-slate-50 rounded-xl border border-slate-100">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+                                <span>${m}</span>
+                                <span class="text-indigo-600">${passPct}% Passed (${d.passed}/${d.total})</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden flex">
+                                <div class="bg-emerald-500" style="width: ${(d.passed / d.total) * 100}%"></div>
+                                <div class="bg-rose-500" style="width: ${(d.failed / d.total) * 100}%"></div>
+                                <div class="bg-amber-500" style="width: ${(d.blocked / d.total) * 100}%"></div>
+                                <div class="bg-slate-300" style="width: ${(d.untested / d.total) * 100}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // Priority Breakdown
+            const priMap = { High: 0, Medium: 0, Low: 0 };
+            state.testCases.forEach(tc => { if (priMap[tc.priority] !== undefined) priMap[tc.priority]++; });
+            const priContainer = document.getElementById('report-priority-breakdown');
+            priContainer.innerHTML = '';
+            for (let p in priMap) {
+                priContainer.innerHTML += `
+                    <div class="flex items-center justify-between text-xs font-medium text-slate-600 bg-slate-50 p-2.5 rounded-lg">
+                        <span>${p} Priority</span>
+                        <span class="font-bold text-slate-800">${priMap[p]} test cases</span>
+                    </div>
+                `;
+            }
+
+            // Type Breakdown
+            const typeMap = {};
+            state.testCases.forEach(tc => {
+                const t = tc.type || 'Functional';
+                typeMap[t] = (typeMap[t] || 0) + 1;
+            });
+            const typeContainer = document.getElementById('report-type-breakdown');
+            typeContainer.innerHTML = '';
+            for (let t in typeMap) {
+                typeContainer.innerHTML += `
+                    <div class="flex items-center justify-between text-xs font-medium text-slate-600 bg-slate-50 p-2.5 rounded-lg">
+                        <span>${t}</span>
+                        <span class="font-bold text-slate-800">${typeMap[t]} test cases</span>
+                    </div>
+                `;
+            }
+        }
+
+        function exportReportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", "testmatrix_report.json");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('JSON report downloaded successfully.');
+        }
+
+        function exportReportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,ID,Title,Module,Type,Priority,Status,AssignedTo\n";
+            state.testCases.forEach(tc => {
+                csvContent += `"${tc.id}","${tc.title.replace(/"/g, '""')}","${tc.module}","${tc.type}","${tc.priority}","${tc.status}","${tc.assignedTo}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", encodedUri);
+            dlAnchor.setAttribute("download", "testcases_export.csv");
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('CSV report downloaded successfully.');
+        }
+
+        function exportReportPDFMock() {
+            window.print();
+        }
+
+        // Global Search
+        function handleGlobalSearch(query) {
+            if (!query) return;
+            switchTab('testcases');
+            document.getElementById('tc-search').value = query;
+            renderTestCasesTable();
+        }
+
+        // Toast Notification
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const iconEl = document.getElementById('toast-icon');
+
+            msgEl.innerText = msg;
+            if (type === 'error') {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-400"></i>';
+            } else {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            }
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3500);
+        }
+
+        // Initialize on load
+        window.onload = function () {
+            loadFromLocalStorage();
+            refreshAllViews();
+        };
+    </script>
+</body>
+
+</html>
